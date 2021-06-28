@@ -45,10 +45,13 @@ class _SearchState extends State<Search>
 
   AppBar _buildSearchBar() {
     return AppBar(
+      automaticallyImplyLeading: false,
       backgroundColor: Colors.white,
+      elevation: 0,
       title: Container(
         margin: EdgeInsets.only(
-          right: 35.0,
+          right: 0.0,
+          top: 5.0,
         ),
         child: Column(
           children: [
@@ -57,10 +60,10 @@ class _SearchState extends State<Search>
               textAlign: TextAlign.center,
               decoration: InputDecoration(
                 contentPadding: EdgeInsets.zero,
-                hintText: "Search Knot Users",
+                hintText: "Search With Name",
                 filled: true,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20.0),
+                  borderRadius: BorderRadius.circular(18.0),
                   borderSide: BorderSide(
                     width: 0,
                     style: BorderStyle.none,

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -25,16 +26,58 @@ class Profile extends StatefulWidget {
 }
 
 class _ProfileState extends State<Profile> {
+  bool isFollowing = false;
   final String? currentUserId = currentUser?.id;
   String postViewStyle = "gridView";
   bool isLoading = false;
   int postCount = 0;
+  int followerCount = 0;
+  int followingCount = 0;
   List<Post> posts = [];
 
   @override
   void initState() {
     super.initState();
     getProfilePosts();
+    getFollowersCount();
+    getFollowingCount();
+    checkIfFollowing();
+  }
+
+  checkIfFollowing() async {
+    // Check if already follow that users
+    DocumentSnapshot document = await followersRef
+        .doc(widget.profileId)
+        .collection('userFollowers')
+        .doc(currentUserId)
+        .get();
+
+    setState(() {
+      isFollowing = document.exists;
+    });
+    print(isFollowing);
+  }
+
+  getFollowersCount() async {
+    QuerySnapshot snapshot = await followersRef
+        .doc(widget.profileId)
+        .collection("userFollowers")
+        .get();
+    setState(() {
+      followerCount = snapshot.docs.length;
+    });
+    print(followerCount);
+  }
+
+  getFollowingCount() async {
+    QuerySnapshot snapshot = await followingRef
+        .doc(widget.profileId)
+        .collection("userFollowing")
+        .get();
+    setState(() {
+      followingCount = snapshot.docs.length;
+    });
+    print(followerCount);
   }
 
   getProfilePosts() async {
@@ -53,7 +96,6 @@ class _ProfileState extends State<Profile> {
           .map((doc) => Post.fromDocument(doc))
           .toList(growable: true);
     });
-    print(posts.toList().toString());
   }
 
   editProfile() {
@@ -72,14 +114,18 @@ class _ProfileState extends State<Profile> {
       padding: EdgeInsets.fromLTRB(15, 20, 15, 0),
       child: TextButton(
         style: ButtonStyle(
+            backgroundColor: isFollowing
+                ? MaterialStateProperty.all(Colors.white)
+                : MaterialStateProperty.all(Colors.indigo.shade600),
             shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-          RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8.0),
-              side: BorderSide(
-                color: Colors.grey.shade900,
-                width: 1,
-              )),
-        )),
+              RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                  side: BorderSide(
+                    color:
+                        isFollowing ? Colors.grey.shade900 : Colors.deepPurple,
+                    width: 1,
+                  )),
+            )),
         onPressed: () async {
           await function();
         },
@@ -89,6 +135,7 @@ class _ProfileState extends State<Profile> {
           style: TextStyle(
             fontFamily: 'Lato',
             fontSize: 18,
+            color: isFollowing ? Colors.blue.shade700 : Colors.white,
           ),
         ),
       ),
@@ -101,9 +148,89 @@ class _ProfileState extends State<Profile> {
     bool isProfileOwner = currentUserId == widget.profileId;
     if (isProfileOwner) {
       return buildButton(text: "Edit Profile", function: editProfile);
-    } else {
-      return Text('Follow');
+    } else if (isFollowing) {
+      return buildButton(
+        text: "Unfollow",
+        function: handleUnFollowUsers,
+      );
+    } else if (!isFollowing) {
+      return buildButton(
+        text: "Follow",
+        function: handleFollowUsers,
+      );
     }
+  }
+
+  handleUnFollowUsers() {
+    setState(() {
+      isFollowing = false;
+    });
+    // Remove the followers
+    followersRef
+        .doc(widget.profileId)
+        .collection('userFollowers')
+        .doc(currentUserId)
+        .get()
+        .then((value) {
+      if (value.exists) {
+        value.reference.delete();
+      }
+    });
+
+    // reomve Following
+    followingRef
+        .doc(currentUserId)
+        .collection('userFollowing')
+        .doc(widget.profileId)
+        .get()
+        .then((value) {
+      if (value.exists) {
+        value.reference.delete();
+      }
+    });
+    // Delte Notifiication to users
+    activityFeedRef
+        .doc(widget.profileId)
+        .collection('feedItems')
+        .doc(currentUserId)
+        .get()
+        .then((value) {
+      if (value.exists) {
+        value.reference.delete();
+      }
+    });
+  }
+
+  handleFollowUsers() {
+    setState(() {
+      isFollowing = true;
+    });
+    //Make auth user follower of antoehre user update their followers collection
+    followersRef
+        .doc(widget.profileId)
+        .collection('userFollowers')
+        .doc(currentUserId)
+        .set({});
+
+    // Users on our folowing collections
+    followingRef
+        .doc(currentUserId)
+        .collection('userFollowing')
+        .doc(widget.profileId)
+        .set({});
+    // Notifiication to users
+    activityFeedRef
+        .doc(widget.profileId)
+        .collection('feedItems')
+        .doc(currentUserId)
+        .set({
+      "type": "follow",
+      "ownerId": widget.profileId,
+      "username": currentUser!.username,
+      "userId": currentUserId,
+      "userProfilephoto": currentUser!.photoUrl,
+      "timestamp": timeStamp,
+    });
   }
 
   buildProfilePost() {
@@ -178,6 +305,14 @@ class _ProfileState extends State<Profile> {
     );
   }
 
+  Future<Null> logout() async {
+    await firebaseAuth.signOut();
+    await googleSignIn.signOut();
+
+    Navigator.pushReplacement(
+        context, MaterialPageRoute(builder: (context) => HomePage()));
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
@@ -191,22 +326,32 @@ class _ProfileState extends State<Profile> {
           appBar: AppBar(
               centerTitle: true,
               title: Text(
-                "Knot Me",
+                "Knot",
                 style: GoogleFonts.pacifico(
                   color: Colors.white,
-                  fontSize: 25,
-                  fontWeight: FontWeight.w100,
                 ),
               ),
-              backgroundColor: Colors.indigo,
-              leading: IconButton(
-                icon: Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: Colors.white,
-                  size: 28.0,
+              actions: <Widget>[
+                IconButton(
+                  onPressed: () {
+                    logout();
+                  },
+                  icon: Icon(
+                    Icons.logout_rounded,
+                    color: Colors.white,
+                    size: 31,
+                  ),
                 ),
-                onPressed: () => Navigator.of(context).pop(),
-              )),
+              ],
+              leading: IconButton(
+                  icon: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: Colors.white,
+                    size: 28.0,
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  })),
           body: SafeArea(
             child: Column(
               mainAxisSize: MainAxisSize.max,
@@ -334,7 +479,7 @@ class _ProfileState extends State<Profile> {
                                       mainAxisSize: MainAxisSize.max,
                                       children: [
                                         Text(
-                                          '179',
+                                          followingCount.toString(),
                                           style: TextStyle(
                                             fontFamily: 'Lato',
                                             fontSize: 17,
@@ -344,12 +489,12 @@ class _ProfileState extends State<Profile> {
                                           padding:
                                               EdgeInsets.fromLTRB(0, 3, 0, 0),
                                           child: Text(
-                                            'Followers',
+                                            'Following',
                                             style: GoogleFonts.monda(
                                               fontSize: 16,
                                             ),
                                           ),
-                                        )
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -357,7 +502,7 @@ class _ProfileState extends State<Profile> {
                                     mainAxisSize: MainAxisSize.max,
                                     children: [
                                       Text(
-                                        '144',
+                                        followerCount.toString(),
                                         style: TextStyle(
                                           fontFamily: 'Lato',
                                           fontSize: 17,

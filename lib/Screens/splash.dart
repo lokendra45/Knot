@@ -30,7 +30,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   route() async {
-    Navigator.push(
+    Navigator.pushReplacement(
         context,
         PageTransition(
             child: HomePage(),

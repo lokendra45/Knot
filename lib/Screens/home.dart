@@ -22,14 +22,16 @@ import 'package:knot/models/users.dart';
 import 'account_screen.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 
-final GoogleSignIn _googleSignIn = GoogleSignIn();
-FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+final GoogleSignIn googleSignIn = GoogleSignIn();
+FirebaseAuth firebaseAuth = FirebaseAuth.instance;
 firebase_storage.Reference storageRef =
     firebase_storage.FirebaseStorage.instance.ref();
 final usersRef = FirebaseFirestore.instance.collection("Users");
 final postRef = FirebaseFirestore.instance.collection("posts");
 final commentRef = FirebaseFirestore.instance.collection("comments");
 final activityFeedRef = FirebaseFirestore.instance.collection("notification");
+final followersRef = FirebaseFirestore.instance.collection("followers");
+final followingRef = FirebaseFirestore.instance.collection("following");
 
 final timeStamp = DateTime.now().toLocal();
 Users? currentUser;
@@ -51,25 +53,24 @@ class _HomePageState extends State<HomePage> {
     super.initState();
 
     pageController = PageController(
-      initialPage: 2,
+      initialPage: 0,
     );
     // Detects when user signed in
-    _googleSignIn.onCurrentUserChanged.listen((event) {
-      handleSigIn(event!);
+    googleSignIn.onCurrentUserChanged.listen((dynamic event) {
+      handleSigIn(event);
     }, onError: (err) {
       print(err);
     });
     // Reauthenticate user when app is opened
 
-    _googleSignIn.signInSilently(suppressErrors: false).then((event) {
-      handleSigIn(event!);
+    googleSignIn.signInSilently(suppressErrors: false).then((dynamic event) {
+      handleSigIn(event);
     }).catchError((err) {
       print(err);
     });
   }
 
-  Future handleSigIn(GoogleSignInAccount account) async {
-    // ignore: unnecessary_null_comparison
+  Future handleSigIn(dynamic account) async {
     if (account != null) {
       await _createUserInDatabase();
       setState(() {
@@ -83,12 +84,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future login() async {
-    await _googleSignIn.signIn();
+    await googleSignIn.signIn();
   }
 
   Future<Null> logout() async {
-    await _firebaseAuth.signOut();
-    await _googleSignIn.signOut();
+    await firebaseAuth.signOut();
+    await googleSignIn.signOut();
 
     setState(() {
       isLoggedIn = false;
@@ -97,7 +98,7 @@ class _HomePageState extends State<HomePage> {
 
 //Create Account
   _createUserInDatabase() async {
-    final GoogleSignInAccount? googleUser = _googleSignIn.currentUser;
+    final GoogleSignInAccount? googleUser = googleSignIn.currentUser;
     final GoogleSignInAuthentication googleAuth =
         await googleUser!.authentication;
     final credential = GoogleAuthProvider.credential(
@@ -130,7 +131,7 @@ class _HomePageState extends State<HomePage> {
     print(currentUser);
     print(googleUser.id);
     print(currentUser!.id);
-    return await _firebaseAuth.signInWithCredential(credential);
+    return await firebaseAuth.signInWithCredential(credential);
   }
 
   @override
@@ -256,8 +257,8 @@ class _HomePageState extends State<HomePage> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         GestureDetector(
-          onTap: () {
-            login();
+          onTap: () async {
+            await login();
           },
           child: Container(
             height: 60,
@@ -409,10 +410,10 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: PageView(
         children: <Widget>[
-          // TimeLine(),
+          //TimeLine(),
           ElevatedButton(
-            onPressed: () {
-              logout();
+            onPressed: () async {
+              await logout();
             },
             child: Text("Logout"),
           ),

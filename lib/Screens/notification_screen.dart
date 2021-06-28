@@ -33,7 +33,17 @@ class _ActivityFeedState extends State<ActivityFeed> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: header(context, titleText: "Notifications"),
+      appBar: AppBar(
+          automaticallyImplyLeading: false,
+          centerTitle: true,
+          title: Text(
+            "Notifications",
+            style: GoogleFonts.pacifico(
+              color: Colors.white,
+              fontWeight: FontWeight.w100,
+            ),
+          ),
+          backgroundColor: Colors.indigo.shade500),
       body: Container(
         color: Colors.white.withOpacity(0.0),
         child: FutureBuilder<dynamic>(
@@ -188,6 +198,7 @@ class ActivityFeedItem extends StatelessWidget {
   }
 }
 
+// show profile when user click on photo
 showProfile(BuildContext context, {String? profileId}) {
   Navigator.push(context,
       MaterialPageRoute(builder: (context) => Profile(profileId: profileId)));
