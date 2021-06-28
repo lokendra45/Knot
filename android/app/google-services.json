@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "861660616908",
+    "project_id": "knotme-acb0f",
+    "storage_bucket": "knotme-acb0f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:861660616908:android:cc86a8b1ad0dee2c738a69",
+        "android_client_info": {
+          "package_name": "com.munal.knot"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "861660616908-ve3h1v8a336mdhck5bo71hu668k9bqm7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.munal.knot",
+            "certificate_hash": "8ad7d21f731246232ffcff08d93c8aa6b8b7dcec"
+          }
+        },
+        {
+          "client_id": "861660616908-qoe6eatmpmuqbm1mt85tq6htu63evc3b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBfJvXISV2vzf0Mmk31zAF1cUf43mtawLw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "861660616908-qoe6eatmpmuqbm1mt85tq6htu63evc3b.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
