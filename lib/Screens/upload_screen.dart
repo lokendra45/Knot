@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -227,7 +226,7 @@ class _UploadState extends State<Upload>
     Im.Image? imageFile = Im.decodeImage(_image!.readAsBytesSync());
     final compressImg = File('$path/img_$postId.jpg')
       ..writeAsBytesSync(
-        Im.encodeJpg(imageFile!, quality: 60),
+        Im.encodeJpg(imageFile!, quality: 50),
       );
     setState(() {
       _image = compressImg;

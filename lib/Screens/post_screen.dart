@@ -8,6 +8,7 @@ import 'package:knot/Screens/comments.dart';
 import 'package:knot/Screens/home.dart';
 import 'package:knot/Screens/notification_screen.dart';
 import 'package:knot/models/users.dart';
+import 'package:knot/widgets/custom_alert.dart';
 import 'package:knot/widgets/progress_bar.dart';
 
 class Post extends StatefulWidget {
@@ -98,6 +99,7 @@ class _PostState extends State<Post> {
             return circularProgressBar();
           }
           Users users = Users.fromDocument(snapshot.data);
+          bool isPostOwner = currentUserId == ownerId;
           return ListTile(
             leading: CircleAvatar(
               backgroundImage: CachedNetworkImageProvider(users.photoUrl),
@@ -116,13 +118,101 @@ class _PostState extends State<Post> {
             ),
             subtitle: (Text(location)),
             trailing: IconButton(
-                onPressed: () => print("Deletein post"),
+                onPressed: () {
+                  if (isPostOwner) {
+                    handleDeletePost(context);
+                  } else {
+                    Text('');
+                  }
+                },
                 icon: Icon(
                   Icons.more_vert_rounded,
                   color: Colors.deepPurple.shade600,
                 )),
           );
         });
+  }
+
+// FUnction to handle the Delte post
+  handleDeletePost(BuildContext parentContex) {
+    return showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.0)),
+            backgroundColor: Colors.white.withOpacity(0.4),
+            title: const Text(
+              'Delete Post',
+              style: TextStyle(color: Colors.deepPurple),
+            ),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: const <Widget>[
+                  Text('Are You Sure ?'),
+                ],
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: Text(
+                  'Delete',
+                  style: TextStyle(
+                      color: Colors.red.shade800,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  deletePost();
+                },
+              ),
+              TextButton(
+                child: Text('Cancel'),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          );
+        });
+  }
+
+// To  dele post its must be ownerid to curentuserid
+  deletePost() async {
+    postRef
+        .doc(ownerId)
+        .collection('userPosts')
+        .doc(postId)
+        .get()
+        .then((docPost) {
+      if (docPost.exists) {
+        docPost.reference.delete();
+      }
+    });
+    // also delte user image for that post
+    storageRef.child("post_$postId.jpg").delete();
+
+    // Also delte the Notifications of that users
+    QuerySnapshot feedSnapshot = await activityFeedRef
+        .doc(ownerId)
+        .collection('feedItems')
+        .where('postId', isEqualTo: postId)
+        .get();
+    feedSnapshot.docs.forEach((notificationSnapshot) {
+      if (notificationSnapshot.exists) {
+        notificationSnapshot.reference.delete();
+      }
+    });
+    // Also delte all comment of that users
+    QuerySnapshot commentSnapshot =
+        await commentRef.doc(postId).collection('comments').get();
+
+    commentSnapshot.docs.forEach((commentDocSnapshot) {
+      if (commentDocSnapshot.exists) {
+        commentDocSnapshot.reference.delete();
+      }
+    });
   }
 
   handleLikePost() {

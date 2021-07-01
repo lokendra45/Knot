@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:knot/Screens/home.dart';
-import 'package:knot/Screens/profile_screen.dart';
+
 import 'package:knot/models/users.dart';
 
 import 'package:knot/widgets/progress_bar.dart';
@@ -163,7 +163,7 @@ class _EditProfilePageWidgetState extends State<EditProfilePageWidget> {
       appBar: AppBar(
         leading: IconButton(
           onPressed: () async {
-            await _showMyDialog();
+            await showMyDialog();
 
             // Navigator.pop(context);
           },
@@ -283,7 +283,7 @@ class _EditProfilePageWidgetState extends State<EditProfilePageWidget> {
     Navigator.pop(this.context);
   }
 
-  Future<void> _showMyDialog() async {
+  Future<void> showMyDialog() async {
     return showDialog<void>(
       context: context,
       barrierDismissible: false, // user must tap button!

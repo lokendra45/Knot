@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:knot/Screens/home.dart';
 import 'package:knot/Screens/post_full_screen.dart';
 import 'package:knot/Screens/profile_screen.dart';
-import 'package:knot/widgets/header.dart';
+
 import 'package:knot/widgets/progress_bar.dart';
 import 'package:timeago/timeago.dart' as timeago;
 

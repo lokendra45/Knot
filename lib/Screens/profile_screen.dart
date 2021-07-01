@@ -1,16 +1,16 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/scheduler.dart';
+
 import 'package:flutter/widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:knot/Screens/home.dart';
 import 'package:knot/Screens/post_screen.dart';
 import 'package:knot/models/users.dart';
-import 'package:knot/widgets/header.dart';
+
 import 'package:knot/widgets/post_grid.dart';
 import 'package:knot/widgets/progress_bar.dart';
 

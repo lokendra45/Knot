@@ -1,9 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -14,7 +13,6 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:knot/Screens/notification_screen.dart';
 import 'package:knot/Screens/profile_screen.dart';
 import 'package:knot/Screens/search_screen.dart';
-import 'package:knot/Screens/timeline_screen.dart';
 
 import 'package:knot/Screens/upload_screen.dart';
 import 'package:knot/models/users.dart';
