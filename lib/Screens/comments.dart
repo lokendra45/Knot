@@ -68,26 +68,21 @@ class CommentsState extends State<Comments> {
       "avatarUrl": currentUser!.photoUrl,
       "userId": currentUser!.id,
     });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-      "Comment Posted",
-      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-    )));
+
     bool isNotPostOwner = postOwnerId != currentUser!.id;
     if (isNotPostOwner) {
       activityFeedRef.doc(postOwnerId).collection('feedItems').add({
         "type": "comment",
         "commentData": commentController.text,
-        "timestamp": Timestamp.now().toDate().toLocal(),
+        "timestamp": timeStamp,
         "postId": postId,
         "userId": currentUser!.id,
         "username": currentUser!.username,
         "userProfilephoto": currentUser!.photoUrl,
         "mediaUrl": postMediaUrl,
       });
+      commentController.clear();
     }
-
-    commentController.clear();
   }
 
   @override

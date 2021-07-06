@@ -13,6 +13,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:knot/Screens/notification_screen.dart';
 import 'package:knot/Screens/profile_screen.dart';
 import 'package:knot/Screens/search_screen.dart';
+import 'package:knot/Screens/sign_up_screen.dart';
+import 'package:knot/Screens/timeline_screen.dart';
 
 import 'package:knot/Screens/upload_screen.dart';
 import 'package:knot/models/users.dart';
@@ -21,7 +23,7 @@ import 'account_screen.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 
 final GoogleSignIn googleSignIn = GoogleSignIn();
-FirebaseAuth firebaseAuth = FirebaseAuth.instance;
+FirebaseAuth? firebaseAuth = FirebaseAuth.instance;
 firebase_storage.Reference storageRef =
     firebase_storage.FirebaseStorage.instance.ref();
 final usersRef = FirebaseFirestore.instance.collection("Users");
@@ -30,6 +32,7 @@ final commentRef = FirebaseFirestore.instance.collection("comments");
 final activityFeedRef = FirebaseFirestore.instance.collection("notification");
 final followersRef = FirebaseFirestore.instance.collection("followers");
 final followingRef = FirebaseFirestore.instance.collection("following");
+final timelineRef = FirebaseFirestore.instance.collection('timeline');
 
 final timeStamp = DateTime.now().toLocal();
 Users? currentUser;
@@ -40,6 +43,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final GlobalKey<FormState> _loginFormKey = GlobalKey<FormState>();
+  TextEditingController emailInputController = TextEditingController();
+  TextEditingController pwdInputController = TextEditingController();
+
   bool isLoggedIn = false;
 
   PageController? pageController;
@@ -53,6 +60,7 @@ class _HomePageState extends State<HomePage> {
     pageController = PageController(
       initialPage: 0,
     );
+
     // Detects when user signed in
     googleSignIn.onCurrentUserChanged.listen((dynamic event) {
       handleSigIn(event);
@@ -68,30 +76,48 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Future handleSigIn(dynamic account) async {
-    if (account != null) {
-      await _createUserInDatabase();
-      setState(() {
-        isLoggedIn = true;
-      });
+  emailValidator(String value) {
+    RegExp regex = new RegExp(
+        r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$');
+    if (!regex.hasMatch(value)) {
+      return "Email format is invalid";
     } else {
-      setState(() {
-        isLoggedIn = false;
-      });
+      return null;
     }
   }
 
-  Future login() async {
+  autoLogin(dynamic account) {
+    if (account != null) {
+      setState(() {
+        isLoggedIn = true;
+      });
+    } else {}
+  }
+
+  Future handleSigIn(dynamic account) async {
+    if (account != null) {
+      await _createUserInDatabase();
+      if (mounted) {
+        setState(() {
+          isLoggedIn = true;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          isLoggedIn = false;
+        });
+      }
+    }
+  }
+
+  login() async {
     await googleSignIn.signIn();
   }
 
   Future<Null> logout() async {
-    await firebaseAuth.signOut();
+    await firebaseAuth!.signOut();
     await googleSignIn.signOut();
-
-    setState(() {
-      isLoggedIn = false;
-    });
   }
 
 //Create Account
@@ -109,27 +135,30 @@ class _HomePageState extends State<HomePage> {
       final username = await Navigator.push(
           context, MaterialPageRoute(builder: (context) => CreateAccount()));
 
-      usersRef.doc(googleUser.id).set(
-        {
-          "id": googleUser.id,
-          "username": username,
-          "photoUrl": googleUser.photoUrl,
-          "email": googleUser.email,
-          "displayName": googleUser.displayName,
-          "bio": "",
-          "timestanmp": timeStamp,
-        },
+      usersRef.doc(googleUser.id).set({
+        "id": googleUser.id,
+        "username": username,
+        "photoUrl": googleUser.photoUrl,
+        "email": googleUser.email,
+        "displayName": googleUser.displayName,
+        "bio": "",
+        "timestanmp": timeStamp,
+      });
+      ScaffoldMessenger(
+        child: Text("Account Created SucessFully"),
       );
-      documentSnapshot = await usersRef
-          .doc(googleUser.id)
-          .get(); // update the snapshot from document
+      // Make new user thier own followers to include thier
+
+      documentSnapshot = await usersRef.doc(googleUser.id).get();
+      // update the snapshot from document
     }
     currentUser = Users.fromDocument(documentSnapshot);
     print(currentUser!.username);
+
     print(currentUser);
     print(googleUser.id);
     print(currentUser!.id);
-    return await firebaseAuth.signInWithCredential(credential);
+    return await firebaseAuth!.signInWithCredential(credential);
   }
 
   @override
@@ -162,7 +191,18 @@ class _HomePageState extends State<HomePage> {
     return Padding(
       padding: EdgeInsets.all(8),
       child: TextFormField(
+        controller: emailInputController,
         keyboardType: TextInputType.emailAddress,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        validator: (value) {
+          RegExp regex = new RegExp(
+              r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$');
+          if (!regex.hasMatch(value!)) {
+            return "Email format is invalid";
+          } else {
+            return null;
+          }
+        },
         onChanged: (value) {},
         decoration: InputDecoration(
             prefixIcon: Icon(
@@ -178,7 +218,14 @@ class _HomePageState extends State<HomePage> {
     return Padding(
       padding: EdgeInsets.all(8),
       child: TextFormField(
+        controller: pwdInputController,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         keyboardType: TextInputType.text,
+        validator: (value) {
+          if (value!.length < 8) {
+            return "Please enter at Least 8 digit.";
+          }
+        },
         obscureText: true,
         onChanged: (value) {},
         decoration: InputDecoration(
@@ -189,19 +236,6 @@ class _HomePageState extends State<HomePage> {
           labelText: 'Password',
         ),
       ),
-    );
-  }
-
-  Widget _buildForgetPasswordButton() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        TextButton(
-          onPressed: () {},
-          child: Text("Forgot Password"),
-        ),
-      ],
     );
   }
 
@@ -218,7 +252,34 @@ class _HomePageState extends State<HomePage> {
                 primary: Colors.indigo,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(40.0))),
-            onPressed: () {},
+            onPressed: () async {
+              try {
+                if (_loginFormKey.currentState!.validate()) {
+                  final UserCredential? _user = await firebaseAuth!
+                      .signInWithEmailAndPassword(
+                          email: emailInputController.text,
+                          password: pwdInputController.text);
+
+                  if (_user != null) {
+                    DocumentSnapshot documentSnapshot =
+                        await usersRef.doc(_user.user!.uid).get();
+                    currentUser = Users.fromDocument(documentSnapshot);
+                    if (mounted) {
+                      setState(() {
+                        isLoggedIn = true;
+                      });
+                    }
+                  }
+                  emailInputController.clear();
+                  pwdInputController.clear();
+
+                  print(currentUser!.username);
+                  print(currentUser);
+                }
+              } on FirebaseAuthException catch (e) {
+                print(e);
+              }
+            },
             child: Text(
               "Login",
               style: TextStyle(
@@ -255,8 +316,9 @@ class _HomePageState extends State<HomePage> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         GestureDetector(
-          onTap: () async {
-            await login();
+          onTap: () {
+            login();
+            print("pressed");
           },
           child: Container(
             height: 60,
@@ -296,29 +358,31 @@ class _HomePageState extends State<HomePage> {
               color: Colors.white,
             ),
             child: SingleChildScrollView(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Text(
-                        "Login",
-                        style: GoogleFonts.acme(
-                          fontSize: MediaQuery.of(context).size.height / 30,
-                          color: Colors.indigo,
+              child: Form(
+                key: _loginFormKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Text(
+                          "Login",
+                          style: GoogleFonts.acme(
+                            fontSize: MediaQuery.of(context).size.height / 30,
+                            color: Colors.indigo,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  _buildEmailRow(),
-                  _buildPasswordRow(),
-                  _buildForgetPasswordButton(),
-                  _buildLoginButton(),
-                  _buildOrRow(),
-                  _buildGoogleBtnRow(),
-                ],
+                      ],
+                    ),
+                    _buildEmailRow(),
+                    _buildPasswordRow(),
+                    _buildLoginButton(),
+                    _buildOrRow(),
+                    _buildGoogleBtnRow(),
+                  ],
+                ),
               ),
             ),
           ),
@@ -334,7 +398,15 @@ class _HomePageState extends State<HomePage> {
         Padding(
           padding: EdgeInsets.only(top: 40),
           child: TextButton(
-            onPressed: () {},
+            onPressed: () async {
+              await Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SignUp(),
+                ),
+                (r) => false,
+              );
+            },
             child: RichText(
               text: TextSpan(children: [
                 TextSpan(
@@ -355,41 +427,87 @@ class _HomePageState extends State<HomePage> {
 
 //Login screen view widget
   Widget buildLoginScreen() {
-    return WillPopScope(
-      onWillPop: () async => false,
-      child: SafeArea(
-        child: Scaffold(
-          //  resizeToAvoidBottomPadding: false,
-          backgroundColor: Color(0xfff2f3f7),
-          body: Stack(
-            children: <Widget>[
-              Container(
-                height: MediaQuery.of(context).size.height * 0.7,
-                width: MediaQuery.of(context).size.width,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white10,
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: const Radius.circular(70),
-                      bottomRight: const Radius.circular(70),
-                    ),
+    return SafeArea(
+      child: Scaffold(
+        //  resizeToAvoidBottomPadding: false,
+        backgroundColor: Color(0xfff2f3f7),
+        body: Stack(
+          children: <Widget>[
+            Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              width: MediaQuery.of(context).size.width,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white10,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: const Radius.circular(70),
+                    bottomRight: const Radius.circular(70),
                   ),
                 ),
               ),
-              SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    _buildLogo(),
-                    _buildContainer(),
-                    _buildSignUpBtn(),
-                  ],
-                ),
-              )
-            ],
-          ),
+            ),
+            SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  _buildLogo(),
+                  _buildContainer(),
+                  _buildSignUpBtn(),
+                ],
+              ),
+            )
+          ],
         ),
       ),
+    );
+  }
+
+  Future<void> showMyDialog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
+          backgroundColor: Colors.white,
+          title: const Text(
+            'Logout',
+            style: TextStyle(color: Colors.deepPurple),
+          ),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: const <Widget>[
+                Text('Are You Sure ?'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(
+                'Yes',
+                style: TextStyle(
+                    color: Colors.red.shade800,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold),
+              ),
+              onPressed: () async {
+                Navigator.pop(context);
+                await logout();
+                setState(() {
+                  isLoggedIn = false;
+                });
+              },
+            ),
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -399,22 +517,17 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  onTap(int pageIndex) {
-    pageController!.animateToPage(pageIndex,
+  onTap(int pageIndex) async {
+    await pageController!.animateToPage(pageIndex,
         duration: Duration(milliseconds: 350), curve: Curves.easeOut);
   }
 
-  Scaffold buildHomeScreen() {
+  Widget buildHomeScreen() {
     return Scaffold(
       body: PageView(
-        children: <Widget>[
-          //TimeLine(),
-          ElevatedButton(
-            onPressed: () async {
-              await logout();
-            },
-            child: Text("Logout"),
-          ),
+        children: [
+          TimeLineScreen(currentUsers: currentUser!),
+          //  DebugScreen(currentUsers: currentUser),
           Search(),
           Upload(currentUser: currentUser),
           ActivityFeed(),
@@ -425,11 +538,12 @@ class _HomePageState extends State<HomePage> {
         physics: NeverScrollableScrollPhysics(),
       ),
       bottomNavigationBar: BottomNavigationBar(
+        elevation: 0,
         type: BottomNavigationBarType.fixed,
         currentIndex: pageIndex,
         onTap: onTap,
-        selectedItemColor: Colors.deepPurple.shade900,
-        backgroundColor: Colors.teal.shade50,
+        selectedItemColor: Colors.blue,
+        backgroundColor: Colors.white,
         items: [
           BottomNavigationBarItem(
               icon: Icon(
@@ -451,7 +565,7 @@ class _HomePageState extends State<HomePage> {
               label: ""),
           BottomNavigationBarItem(
               icon: Icon(
-                Icons.notifications,
+                Icons.favorite_border_rounded,
                 size: 30.0,
               ),
               label: ""),
@@ -461,6 +575,19 @@ class _HomePageState extends State<HomePage> {
                 size: 30.0,
               ),
               label: ""),
+          BottomNavigationBarItem(
+            label: "",
+            icon: IconButton(
+              onPressed: () async {
+                await showMyDialog();
+              },
+              icon: Icon(
+                Icons.logout_rounded,
+                size: 30.0,
+                color: Colors.red.shade900,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -470,7 +597,8 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     if (isLoggedIn) {
       return buildHomeScreen();
+    } else {
+      return buildLoginScreen();
     }
-    return buildLoginScreen();
   }
 }

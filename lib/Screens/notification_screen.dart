@@ -6,7 +6,6 @@ import 'package:knot/Screens/home.dart';
 import 'package:knot/Screens/post_full_screen.dart';
 import 'package:knot/Screens/profile_screen.dart';
 
-import 'package:knot/widgets/progress_bar.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class ActivityFeed extends StatefulWidget {
@@ -15,16 +14,23 @@ class ActivityFeed extends StatefulWidget {
 }
 
 class _ActivityFeedState extends State<ActivityFeed> {
-  getActivityFeed() async {
-    dynamic snapshot = await activityFeedRef
+  @override
+  void initState() {
+    super.initState();
+    getActivityFeed();
+  }
+
+  Future getActivityFeed() async {
+    QuerySnapshot snapshot = await activityFeedRef
         .doc(currentUser!.id)
         .collection('feedItems')
-        .orderBy('timestamp', descending: true)
-        .limit(40)
+        .limit(50)
+        .orderBy('type', descending: true)
         .get();
     List<ActivityFeedItem> notificationItems = [];
-    snapshot.docs.forEach((doc) {
-      notificationItems.add(ActivityFeedItem.fromDocument(doc));
+    snapshot.docs.forEach((docs) async {
+      dynamic _docdata = docs.data();
+      notificationItems.add(ActivityFeedItem.fromDocument(docs, _docdata));
     });
 
     return notificationItems;
@@ -32,30 +38,44 @@ class _ActivityFeedState extends State<ActivityFeed> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-          automaticallyImplyLeading: false,
-          centerTitle: true,
-          title: Text(
-            "Notifications",
-            style: GoogleFonts.pacifico(
-              color: Colors.white,
-              fontWeight: FontWeight.w100,
+    return RefreshIndicator(
+      onRefresh: getActivityFeed,
+      child: Scaffold(
+        appBar: AppBar(
+            automaticallyImplyLeading: false,
+            centerTitle: true,
+            title: Text(
+              "Notifications",
+              style: GoogleFonts.pacifico(
+                color: Colors.white,
+                fontWeight: FontWeight.w100,
+              ),
             ),
-          ),
-          backgroundColor: Colors.indigo.shade500),
-      body: Container(
-        color: Colors.white.withOpacity(0.0),
-        child: FutureBuilder<dynamic>(
-            future: getActivityFeed(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return circularProgressBar();
-              }
-              return ListView(
-                children: snapshot.data,
-              );
-            }),
+            backgroundColor: Colors.indigo.shade500),
+        body: Container(
+          color: Colors.white.withOpacity(0.0),
+          child: FutureBuilder<dynamic>(
+              future: getActivityFeed(),
+              builder: (context, snapshot) {
+                print(snapshot.data.toString());
+
+                if (!snapshot.hasData) {
+                  return Center(
+                    child: Text(
+                      "No Notifications",
+                      style: GoogleFonts.righteous(
+                        fontSize: 18,
+                        color: Colors.grey.withOpacity(0.7),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  );
+                }
+                return ListView(
+                  children: snapshot.data,
+                );
+              }),
+        ),
       ),
     );
   }
@@ -65,14 +85,14 @@ Widget? notificationContentView;
 String? notificationItemText;
 
 class ActivityFeedItem extends StatelessWidget {
-  final String username;
-  final String userId;
-  final String type;
-  final String mediaUrl;
-  final String postId;
-  final String userProfilephoto;
-  final String commentData;
-  final Timestamp timestamp;
+  final String? username;
+  final String? userId;
+  final String? type;
+  final String? mediaUrl;
+  final String? postId;
+  final String? userProfilephoto;
+  final String? commentData;
+  final Timestamp? timestamp;
 
   ActivityFeedItem({
     required this.username,
@@ -84,16 +104,16 @@ class ActivityFeedItem extends StatelessWidget {
     required this.timestamp,
     required this.mediaUrl,
   });
-  factory ActivityFeedItem.fromDocument(DocumentSnapshot docs) {
+  factory ActivityFeedItem.fromDocument(DocumentSnapshot? docs, Map? docdata) {
     return ActivityFeedItem(
-      username: docs['username'],
-      userId: docs['userId'],
-      type: docs['type'],
-      postId: docs['postId'],
-      userProfilephoto: docs['userProfilephoto'],
-      commentData: docs['commentData'],
-      timestamp: docs['timestamp'],
-      mediaUrl: docs['mediaUrl'],
+      username: docdata!['username'],
+      userId: docs!['userId'],
+      type: docdata['type'],
+      postId: docdata['postId'],
+      userProfilephoto: docdata['userProfilephoto'],
+      commentData: docdata['commentData'],
+      timestamp: docdata['timestamp'],
+      mediaUrl: docdata['mediaUrl'],
     );
   }
   showPost(context) {
@@ -101,14 +121,14 @@ class ActivityFeedItem extends StatelessWidget {
         context,
         MaterialPageRoute(
             builder: (context) =>
-                PostFullScreen(userId: userId, postId: postId)));
+                PostFullScreen(userId: userId!, postId: postId!)));
   }
 
   notificationViewType(context) {
-    if (type == "like" || type == "comment") {
+    if (this.type == "like" || this.type == "comment") {
       notificationContentView = GestureDetector(
-        onTap: () {
-          showPost(context);
+        onTap: () async {
+          await showPost(context);
         },
         child: Container(
           height: 60.0,
@@ -118,7 +138,7 @@ class ActivityFeedItem extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: CachedNetworkImageProvider(mediaUrl),
+                  image: CachedNetworkImageProvider(mediaUrl!),
                 ),
               ),
             ),
@@ -126,17 +146,18 @@ class ActivityFeedItem extends StatelessWidget {
         ),
       );
     } else {
-      notificationContentView = Text("");
+      notificationContentView = Text(" ");
     }
-    if (type == "like") {
+    if (this.type == "like") {
       notificationItemText = "Liked Your Photo";
-    } else if (type == "follow") {
+    } else if (this.type == "follow") {
       notificationItemText = "is following you";
-    } else if (type == "comment") {
+    } else if (this.type == "comment") {
       notificationItemText = "replied : $commentData";
     } else {
-      notificationItemText = "Something went wrong$type";
+      notificationItemText = "Something went wrong$this.type";
     }
+    print(type.toString());
   }
 
   @override
@@ -147,12 +168,13 @@ class ActivityFeedItem extends StatelessWidget {
         bottom: 15.0,
       ),
       child: Container(
-        color: Colors.white.withOpacity(0.0),
+        color: Colors.white,
         child: Card(
-          color: Colors.white.withOpacity(0.0),
+          elevation: 0,
+          color: Colors.white,
           margin: EdgeInsets.all(5),
           shape: RoundedRectangleBorder(
-              side: BorderSide(color: Colors.grey, width: 1),
+              side: BorderSide(color: Colors.grey, width: 0),
               borderRadius: BorderRadius.circular(20)),
           child: ListTile(
             shape: RoundedRectangleBorder(
@@ -161,15 +183,12 @@ class ActivityFeedItem extends StatelessWidget {
             title: GestureDetector(
               onTap: () {
                 //when click on notification
-                showProfile(context, profileId: userId);
+                showProfile(context, profileId: userId!);
               },
               child: RichText(
                 overflow: TextOverflow.ellipsis,
                 text: TextSpan(
-                  style: TextStyle(
-                    fontSize: 15.0,
-                    color: Colors.black54,
-                  ),
+                  style: GoogleFonts.amiko(fontSize: 17, color: Colors.black),
                   children: [
                     TextSpan(
                       text: username,
@@ -184,10 +203,10 @@ class ActivityFeedItem extends StatelessWidget {
               ),
             ),
             leading: CircleAvatar(
-              backgroundImage: CachedNetworkImageProvider(userProfilephoto),
+              backgroundImage: CachedNetworkImageProvider(userProfilephoto!),
             ),
             subtitle: Text(
-              timeago.format(timestamp.toDate()),
+              timeago.format(timestamp!.toDate()),
               overflow: TextOverflow.ellipsis,
             ),
             trailing: notificationContentView,
@@ -199,7 +218,7 @@ class ActivityFeedItem extends StatelessWidget {
 }
 
 // show profile when user click on photo
-showProfile(BuildContext context, {String? profileId}) {
+showProfile(BuildContext context, {required String profileId}) {
   Navigator.push(context,
       MaterialPageRoute(builder: (context) => Profile(profileId: profileId)));
 }

@@ -6,7 +6,6 @@ import 'package:flutter/widgets.dart';
 
 import 'package:knot/Screens/home.dart';
 
-import 'package:page_transition/page_transition.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -24,19 +23,20 @@ class _SplashScreenState extends State<SplashScreen> {
     startTimer();
   }
 
-  startTimer() async {
-    var duration = Duration(seconds: 2);
+  startTimer() {
+    var duration = Duration(seconds: 3);
     return new Timer(duration, route);
   }
 
   route() async {
-    Navigator.pushReplacement(
-        context,
-        PageTransition(
-            child: HomePage(),
-            type: PageTransitionType.leftToRightWithFade,
-            reverseDuration: Duration(milliseconds: 400),
-            curve: Curves.easeInOut));
+    await Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HomePage(),
+      ),
+      (r) => false,
+    );
+    
   }
 
   initScreen(BuildContext context) {

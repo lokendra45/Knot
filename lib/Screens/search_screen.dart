@@ -10,8 +10,8 @@ import 'package:knot/Screens/notification_screen.dart';
 import 'package:knot/models/users.dart';
 import 'package:knot/widgets/progress_bar.dart';
 
-String capitalize(String? s) {
-  return s![0].toUpperCase() + s.substring(1);
+String capitalize(String s) {
+  return s[0].toUpperCase() + s.substring(1);
 }
 
 class Search extends StatefulWidget {
@@ -21,12 +21,12 @@ class Search extends StatefulWidget {
 
 class _SearchState extends State<Search>
     with AutomaticKeepAliveClientMixin<Search> {
-  TextEditingController searchContoller = TextEditingController();
+  TextEditingController? searchContoller = TextEditingController();
   Future<QuerySnapshot>? searchResultsFuture;
 
-  void searchUsers(String searchQuery) {
+  searchUsers(String? searchQuery) {
     Future<QuerySnapshot> users = usersRef
-        .where('displayName', isGreaterThanOrEqualTo: searchQuery.trim())
+        .where('displayName', isGreaterThanOrEqualTo: searchQuery!.trim())
         .where('displayName', isLessThan: searchQuery.trim() + "\u{f8ff}")
         .get();
 
@@ -37,7 +37,7 @@ class _SearchState extends State<Search>
 
   clearSearch() {
     setState(() {
-      searchContoller.clear();
+      searchContoller!.clear();
       searchResultsFuture = null;
       FocusScope.of(context).unfocus();
     });
@@ -133,11 +133,9 @@ class _SearchState extends State<Search>
 
   buildUsersSearchResult() {
     return FutureBuilder<QuerySnapshot>(
-        future: searchResultsFuture,
+        future: searchResultsFuture!,
         builder: (context, snapshot) {
-          if (!snapshot.hasData &&
-              snapshot.data?.docs == null &&
-              snapshot.connectionState == ConnectionState.none) {
+          if (!snapshot.hasData) {
             return circularProgressBar();
           }
           if (snapshot.hasError) {
@@ -149,9 +147,11 @@ class _SearchState extends State<Search>
           } else {
             List<UserResults> searchResultsList = [];
 
-            snapshot.data?.docs.forEach((element) {
+            snapshot.data!.docs.forEach((element) async {
               Users users = Users.fromDocument(element);
-              UserResults searchRes = UserResults(users);
+              UserResults searchRes = UserResults(
+                user: users,
+              );
               searchResultsList.add(searchRes);
             });
             return ListView(
@@ -181,7 +181,7 @@ class _SearchState extends State<Search>
 class UserResults extends StatelessWidget {
   final Users user;
 
-  UserResults(this.user);
+  UserResults({required this.user});
   @override
   Widget build(BuildContext context) {
     return Container(

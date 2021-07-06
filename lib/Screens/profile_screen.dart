@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -8,7 +10,10 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:knot/Screens/home.dart';
+
 import 'package:knot/Screens/post_screen.dart';
+import 'package:knot/Screens/splash.dart';
+import 'package:knot/Screens/timeline_screen.dart';
 import 'package:knot/models/users.dart';
 
 import 'package:knot/widgets/post_grid.dart';
@@ -51,11 +56,12 @@ class _ProfileState extends State<Profile> {
         .collection('userFollowers')
         .doc(currentUserId)
         .get();
-
-    setState(() {
-      isFollowing = document.exists;
-    });
-    print(isFollowing);
+    if (mounted) {
+      setState(() {
+        isFollowing = document.exists;
+      });
+      print(isFollowing);
+    }
   }
 
   getFollowersCount() async {
@@ -63,10 +69,12 @@ class _ProfileState extends State<Profile> {
         .doc(widget.profileId)
         .collection("userFollowers")
         .get();
-    setState(() {
-      followerCount = snapshot.docs.length;
-    });
-    print(followerCount);
+    if (mounted) {
+      setState(() {
+        followerCount = snapshot.docs.length;
+      });
+      print(followerCount);
+    }
   }
 
   getFollowingCount() async {
@@ -74,10 +82,12 @@ class _ProfileState extends State<Profile> {
         .doc(widget.profileId)
         .collection("userFollowing")
         .get();
-    setState(() {
-      followingCount = snapshot.docs.length;
-    });
-    print(followerCount);
+    if (mounted) {
+      setState(() {
+        followingCount = snapshot.docs.length;
+      });
+      print(followerCount);
+    }
   }
 
   getProfilePosts() async {
@@ -89,13 +99,15 @@ class _ProfileState extends State<Profile> {
         .collection('userPosts')
         .orderBy('timestamp', descending: true)
         .get();
-    setState(() {
-      isLoading = false;
-      postCount = snapshot.docs.length;
-      posts = snapshot.docs
-          .map((doc) => Post.fromDocument(doc))
-          .toList(growable: true);
-    });
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+        postCount = snapshot.docs.length;
+        posts = snapshot.docs
+            .map((doc) => Post.fromDocument(doc))
+            .toList(growable: true);
+      });
+    }
   }
 
   editProfile() {
@@ -196,7 +208,7 @@ class _ProfileState extends State<Profile> {
         .get()
         .then((value) {
       if (value.exists) {
-        value.reference.delete();
+        value.reference;
       }
     });
   }
@@ -305,17 +317,9 @@ class _ProfileState extends State<Profile> {
     );
   }
 
-  Future<Null> logout() async {
-    await firebaseAuth.signOut();
-    await googleSignIn.signOut();
-
-    Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (context) => HomePage()));
-  }
-
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
+    return FutureBuilder<dynamic>(
       future: usersRef.doc(widget.profileId).get(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
@@ -324,34 +328,14 @@ class _ProfileState extends State<Profile> {
         Users user = Users.fromDocument(snapshot.data);
         return Scaffold(
           appBar: AppBar(
-              centerTitle: true,
-              title: Text(
-                "Knot",
-                style: GoogleFonts.pacifico(
-                  color: Colors.white,
-                ),
+            centerTitle: true,
+            title: Text(
+              "Knot",
+              style: GoogleFonts.pacifico(
+                color: Colors.white,
               ),
-              actions: <Widget>[
-                IconButton(
-                  onPressed: () {
-                    logout();
-                  },
-                  icon: Icon(
-                    Icons.logout_rounded,
-                    color: Colors.white,
-                    size: 31,
-                  ),
-                ),
-              ],
-              leading: IconButton(
-                  icon: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white,
-                    size: 28.0,
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                  })),
+            ),
+          ),
           body: SafeArea(
             child: Column(
               mainAxisSize: MainAxisSize.max,

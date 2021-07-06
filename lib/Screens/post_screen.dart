@@ -8,7 +8,6 @@ import 'package:knot/Screens/comments.dart';
 import 'package:knot/Screens/home.dart';
 import 'package:knot/Screens/notification_screen.dart';
 import 'package:knot/models/users.dart';
-import 'package:knot/widgets/custom_alert.dart';
 import 'package:knot/widgets/progress_bar.dart';
 
 class Post extends StatefulWidget {
@@ -28,7 +27,7 @@ class Post extends StatefulWidget {
       required this.mediaUrl,
       required this.likes});
 
-  factory Post.fromDocument(DocumentSnapshot doc) {
+  factory Post.fromDocument(dynamic doc) {
     return Post(
       postId: doc['postId'],
       ownerId: doc['ownerId'],
@@ -69,7 +68,7 @@ class Post extends StatefulWidget {
 }
 
 class _PostState extends State<Post> {
-  final String? currentUserId = currentUser?.id;
+  final String currentUserId = currentUser!.id;
   final String postId;
   final String ownerId;
   final String username;
@@ -92,13 +91,13 @@ class _PostState extends State<Post> {
     required this.likeCount,
   });
   buildPostHeader() {
-    return FutureBuilder(
+    return FutureBuilder<DocumentSnapshot>(
         future: usersRef.doc(ownerId).get(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return circularProgressBar();
           }
-          Users users = Users.fromDocument(snapshot.data);
+          Users users = Users.fromDocument(snapshot.data!);
           bool isPostOwner = currentUserId == ownerId;
           return ListTile(
             leading: CircleAvatar(
@@ -141,7 +140,7 @@ class _PostState extends State<Post> {
           return AlertDialog(
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20.0)),
-            backgroundColor: Colors.white.withOpacity(0.4),
+            backgroundColor: Colors.white,
             title: const Text(
               'Delete Post',
               style: TextStyle(color: Colors.deepPurple),
@@ -208,7 +207,7 @@ class _PostState extends State<Post> {
     QuerySnapshot commentSnapshot =
         await commentRef.doc(postId).collection('comments').get();
 
-    commentSnapshot.docs.forEach((commentDocSnapshot) {
+    commentSnapshot.docs.forEach((commentDocSnapshot) async {
       if (commentDocSnapshot.exists) {
         commentDocSnapshot.reference.delete();
       }
@@ -251,10 +250,10 @@ class _PostState extends State<Post> {
   }
 
   //Function for Like Notification
-  addLikeNotification() {
-    bool isPostOwner = currentUserId != ownerId;
-    if (isPostOwner) {
-      activityFeedRef.doc(ownerId).collection("feedItems").doc(postId).set({
+  dynamic addLikeNotification() {
+    bool isNotPostOwner = ownerId != currentUserId;
+    if (isNotPostOwner) {
+      activityFeedRef.doc(ownerId).collection("feedItems").add({
         "type": "like",
         "username": currentUser!.username,
         "userId": currentUser!.id,
@@ -266,9 +265,9 @@ class _PostState extends State<Post> {
     }
   }
 
-  removeLikeFromActivityFeed() {
-    bool isPostOwner = currentUserId != ownerId;
-    if (isPostOwner) {
+  dynamic removeLikeFromActivityFeed() {
+    bool isNotPostOwner = ownerId != currentUserId;
+    if (isNotPostOwner) {
       activityFeedRef
           .doc(ownerId)
           .collection("feedItems")
@@ -276,7 +275,7 @@ class _PostState extends State<Post> {
           .get()
           .then((value) {
         if (value.exists) {
-          value.reference;
+          value.reference.delete();
         }
       });
     }
@@ -379,20 +378,18 @@ class _PostState extends State<Post> {
   @override
   Widget build(BuildContext context) {
     isLiked = (likes[currentUserId] == true);
-    return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          buildPostHeader(),
-          buildPostImage(),
-          Divider(
-            height: 15.0,
-            thickness: 1,
-            color: Colors.grey.shade300,
-          ),
-          buildFooter(),
-        ],
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        buildPostHeader(),
+        buildPostImage(),
+        Divider(
+          height: 15.0,
+          thickness: 1,
+          color: Colors.grey.shade300,
+        ),
+        buildFooter(),
+      ],
     );
   }
 }

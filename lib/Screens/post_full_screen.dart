@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:knot/Screens/home.dart';
 import 'package:knot/Screens/post_screen.dart';
@@ -12,8 +13,12 @@ class PostFullScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<dynamic>(
-        future: postRef.doc(userId).collection('userPosts').doc(postId).get(),
+    return FutureBuilder<DocumentSnapshot>(
+        future: postRef
+            .doc(currentUser!.id)
+            .collection('userPosts')
+            .doc(postId)
+            .get(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return circularProgressBar();

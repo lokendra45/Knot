@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Users {
   final String id;
   final String username;
@@ -15,7 +17,7 @@ class Users {
     required this.bio,
   });
 
-  factory Users.fromDocument(dynamic documentSnapshot) => Users(
+  factory Users.fromDocument(DocumentSnapshot documentSnapshot) => Users(
         id: documentSnapshot.id,
         username: documentSnapshot['username'],
         email: documentSnapshot['email'],

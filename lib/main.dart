@@ -1,6 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+
 import 'package:knot/Screens/splash.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,14 +21,12 @@ class _MyApplicationState extends State<MyApplication> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.indigo,
-          accentColor: Colors.deepPurple,
-        ),
-        initialRoute: '/',
-        routes: {
-          '/': (context) => SplashScreen(),
-        });
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.indigo,
+        accentColor: Colors.deepPurple,
+      ),
+      home: SplashScreen(),
+    );
   }
 }

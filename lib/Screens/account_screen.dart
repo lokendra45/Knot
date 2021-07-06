@@ -10,7 +10,7 @@ class CreateAccount extends StatefulWidget {
 
 class _CreateAccountState extends State<CreateAccount> {
   final _formKey = GlobalKey<FormState>();
-  late String username;
+  String? username;
 
   void submit() {
     if (_formKey.currentState!.validate()) {
@@ -103,16 +103,24 @@ class _CreateAccountState extends State<CreateAccount> {
                             child: Form(
                                 key: _formKey,
                                 child: TextFormField(
+                                  autovalidateMode:
+                                      AutovalidateMode.onUserInteraction,
                                   autofocus: true,
                                   maxLength: 10,
                                   maxLengthEnforcement:
                                       MaxLengthEnforcement.enforced,
                                   validator: (value) {
-                                    if (value!.trim().length < 3 ||
-                                        value.isEmpty) {
+                                    final regexUsername =
+                                        RegExp(r"^[a-zA-Z0-9_]{3,20}$");
+                                    if (value!.trim().length < 3) {
                                       return "Username too short";
-                                    } else if (value.trim().length > 10) {
-                                      return "Username too long";
+                                    }
+
+                                    if (value.trim().isEmpty) {
+                                      return "Username must Entered";
+                                    }
+                                    if (!regexUsername.hasMatch(value)) {
+                                      return "Usernames should be a maximum of 20 characters with letters, numbers or underscores only.";
                                     } else {
                                       return null;
                                     }

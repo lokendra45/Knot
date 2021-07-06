@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:knot/Screens/home.dart';
 
 import 'package:knot/models/users.dart';
@@ -208,10 +209,15 @@ class _EditProfilePageWidgetState extends State<EditProfilePageWidget> {
                       children: <Widget>[
                         Padding(
                           padding: EdgeInsets.fromLTRB(0, 15, 0, 15),
-                          child: CircleAvatar(
-                            radius: 51.0,
-                            backgroundImage:
-                                CachedNetworkImageProvider(_user!.photoUrl),
+                          child: GestureDetector(
+                            onTap: () {
+                              print('profile pic update');
+                            },
+                            child: CircleAvatar(
+                              radius: 51.0,
+                              backgroundImage:
+                                  CachedNetworkImageProvider(_user!.photoUrl),
+                            ),
                           ),
                         ),
                         Padding(
